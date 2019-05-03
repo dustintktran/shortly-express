@@ -79,8 +79,20 @@ app.post('/links',
 /************************************************************/
 
 app.post('/login', (req, res) => {
-  models.Users.get(req.body.username)
-    .then()
+  const { username, password } = req.body;
+  models.Users.get({ username })
+    .then(data => {
+      if (!data) {
+        res.redirect('/login');
+      } else {
+        let auth = models.Users.compare(password, data.password, data.salt)
+        if (!auth) {
+          res.redirect('/login');
+        } else {
+          res.redirect('/');
+        }
+      }
+    })
 });
 
 app.post('/signup', (req, res) => {
@@ -89,13 +101,12 @@ app.post('/signup', (req, res) => {
     .then(data => {
       // console.log(data);
       if (data) {
-        if (data.username === req.body.username) {
+        if (data.username === username) {
           res.redirect('/signup');
         }
-      }
-      else {
+      } else {
         models.Users.create(req.body)
-          .then(data => res.redirect('/'))
+          .then(() => res.redirect('/'))
           .catch(err => console.error('ERROR: ', err));
       }
     })
