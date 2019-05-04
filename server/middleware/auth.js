@@ -3,36 +3,31 @@ const Promise = require('bluebird');
 // const cookie = require('./cookieParser.js')
 
 module.exports.createSession = (req, res, next) => {
-  // console.log(Object.keys(req.cookies));
-  // console.log(req)
   let userId;
   let username;
-
+  res.cookies = {};
+  res.cookies['shortlyid'] = { value: '' };
 
   if (JSON.stringify(req.cookies) === '{}') {
+    // If no session exists, create a new session
     models.Sessions.create()
-      .then((data) => models.Sessions.get({ id: data.insertId }))
+      .then(data => models.Sessions.get({ id: data.insertId }))
       .then(data => {
-        req.session = { hash: data.hash }
-
-        res.cookies = {};
+        req.session = { hash: data.hash };
         res.cookies['shortlyid'] = { value: data.hash };
-        next()
+        next();
       })
   } else {
+    
     models.Sessions.get({ hash: req.cookies.shortlyid })
-      .then(data => {
-        if (data) {
-          userId = data.userId
-        }
-      })
-      .then(() => {
+      // Find the UserID of the cookie
+      .then(data => { if (data) { userId = data.userId } })
+      .then(() => { 
         if (!userId) {
           req.session = { hash: req.cookies.shortlyid }
           next();
-        } else {
-          //get out user id from Sessions
-          //get our user by id from users
+        } else { 
+          // Set the username and ID of the session
           models.Users.get({ id: userId })
             .then(data => username = data.username)
             .then(() => {
@@ -42,15 +37,9 @@ module.exports.createSession = (req, res, next) => {
               req.session.userId = userId;
               next();
             })
-          //set session.user.username to equal it
-
         }
       })
-
-    // console.log(req)
   }
-
-  // next();
 };
 
 /************************************************************/
